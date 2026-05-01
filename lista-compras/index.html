@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#FAF6F0" />
+  <title>Despensa · Lista de Compras Inteligente</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <div class="brand">
+        <span class="brand__mark">⌂</span>
+        <div class="brand__text">
+          <h1>Despensa</h1>
+          <p>lista de compras inteligente</p>
+        </div>
+      </div>
+      <button id="btnSelectPurchase" class="purchase-selector" type="button" aria-label="Selecionar compra">
+        <span class="purchase-selector__label">Compra</span>
+        <span class="purchase-selector__date" id="currentPurchaseLabel">—</span>
+        <span class="purchase-selector__icon">▾</span>
+      </button>
+    </div>
+  </header>
+
+  <main id="mainContent">
+    <!-- LOADING -->
+    <section id="loadingState" class="state-panel">
+      <div class="loader">
+        <span></span><span></span><span></span>
+      </div>
+      <p>Lendo sua última nota fiscal…</p>
+    </section>
+
+    <!-- EMPTY -->
+    <section id="emptyState" class="state-panel" hidden>
+      <div class="empty-card">
+        <div class="empty-card__icon">📄</div>
+        <h2>Nenhuma compra encontrada</h2>
+        <p>Adicione um arquivo PDF de NFC-e em <code>compras/</code> e atualize o <code>manifest.json</code>.</p>
+      </div>
+    </section>
+
+    <!-- ERROR -->
+    <section id="errorState" class="state-panel" hidden>
+      <div class="empty-card empty-card--error">
+        <div class="empty-card__icon">⚠</div>
+        <h2>Não consegui ler esta nota</h2>
+        <p id="errorMessage">Erro desconhecido.</p>
+      </div>
+    </section>
+
+    <!-- CONTENT -->
+    <section id="purchaseView" class="purchase-view" hidden>
+      <div class="purchase-summary">
+        <div class="summary-card summary-card--primary">
+          <span class="summary-card__label">Comprado</span>
+          <span class="summary-card__value" id="summaryTotal">R$ 0,00</span>
+          <span class="summary-card__sub" id="summaryItemsCount">0 itens</span>
+        </div>
+        <div class="summary-card">
+          <span class="summary-card__label">A repor</span>
+          <span class="summary-card__value summary-card__value--accent" id="summaryToBuy">R$ 0,00</span>
+          <span class="summary-card__sub" id="summaryToBuyCount">0 itens</span>
+        </div>
+      </div>
+
+      <div class="filters">
+        <button class="filter-chip is-active" data-filter="all" type="button">Todos</button>
+        <button class="filter-chip" data-filter="pending" type="button">Faltando</button>
+        <button class="filter-chip" data-filter="ok" type="button">Tenho</button>
+        <input id="searchInput" type="search" placeholder="buscar item…" class="filter-search" />
+      </div>
+
+      <div id="categoriesContainer" class="categories"></div>
+
+      <button id="btnViewList" class="fab" type="button" aria-label="Ver lista de compras">
+        <span class="fab__icon">🛒</span>
+        <span class="fab__text">Ver lista</span>
+        <span class="fab__count" id="fabCount">0</span>
+      </button>
+    </section>
+  </main>
+
+  <!-- MODAL: Seletor de compra -->
+  <div id="purchaseModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="purchaseModalTitle">
+    <div class="modal__backdrop" data-close></div>
+    <div class="modal__panel">
+      <header class="modal__header">
+        <h2 id="purchaseModalTitle">Suas compras</h2>
+        <button class="modal__close" data-close type="button" aria-label="Fechar">✕</button>
+      </header>
+      <ul id="purchaseList" class="purchase-list"></ul>
+    </div>
+  </div>
+
+  <!-- MODAL: Lista de compras gerada -->
+  <div id="shoppingListModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="shoppingListTitle">
+    <div class="modal__backdrop" data-close></div>
+    <div class="modal__panel modal__panel--tall">
+      <header class="modal__header">
+        <h2 id="shoppingListTitle">Lista de compras</h2>
+        <button class="modal__close" data-close type="button" aria-label="Fechar">✕</button>
+      </header>
+      <div id="shoppingListContent" class="shopping-list"></div>
+      <footer class="modal__footer">
+        <button id="btnCopyList" class="btn btn--ghost" type="button">📋 Copiar</button>
+        <button id="btnShareList" class="btn btn--primary" type="button">Compartilhar</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" hidden></div>
+
+  <!-- PDF.js v3.11 UMD legacy (vendorado em /vendor para zero dependência externa) -->
+  <script src="vendor/pdfjs/pdf.min.js"></script>
+  <script>
+    (function () {
+      // O bundle UMD pode expor em diferentes globais dependendo do ambiente
+      var lib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
+      if (lib) {
+        window.pdfjsLib = lib;
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'vendor/pdfjs/pdf.worker.min.js';
+      } else {
+        console.error('PDF.js não pôde ser carregado.');
+      }
+    })();
+  </script>
+  <script src="ncm-categories.js"></script>
+  <script src="pdf-parser.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
